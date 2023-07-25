@@ -6,10 +6,19 @@
 #
 # Public Domain licence
 
+helptext=\
 """
 Brainfuck interpreter.
 
-It reads brainfuck code and
+Brainfuck commands:
++ Increment current cell
+- Decrement current cell
+> Move to next cell
+< Move to previous cell (here: stay at cell 0 if we are already at cell 0)
+[ if cell value is 0, move to next command after the corresponding ]. If value is not 0, continue with command after [ 
+] jump to corresponding [
+, read value
+. output value
 """
 
 import sys
@@ -150,8 +159,7 @@ def buildbracemap(code):
 
 
 def main():
-  epilog =\
-  parser=argparse.ArgumentParser()
+  parser=argparse.ArgumentParser(epilog=helptext,formatter_class=argparse.RawDescriptionHelpFormatter)
   parser.add_argument("--source",action="store",type=str,required=False,default=None,dest="codeFile",help="Input source file, should contain the source code")
   parser.add_argument("--code",action="store",type=str,required=False,default=None,dest="inputCode",help="Input source file, should contain the source code")
   parser.add_argument("--inmode",action="store",type=str,required=False,default="raw",dest="inputMode",help="How the input is read. Either raw or int for ASCII written integers")

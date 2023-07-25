@@ -103,7 +103,7 @@ class Source(object):
     self.position=0
     return self
 
-def execute(code,data,outputMode):
+def execute(code,data,outputMode,celllimit=0):
   if outputMode not in ["raw", "int"]:
     raise Exception("Invalid outmode "+readmode)
 
@@ -122,10 +122,12 @@ def execute(code,data,outputMode):
       cellptr = 0 if cellptr <= 0 else cellptr - 1
 
     if command == "+":
-      cells[cellptr] = cells[cellptr] + 1
+      c = cells[cellptr]
+      cells[cellptr] = c + 1 if celllimit==0 else (c+1) % celllimit
 
     if command == "-":
-      cells[cellptr] = cells[cellptr] - 1
+      c = cells[cellptr]
+      cells[cellptr] = c - 1 if celllimit==0 else (c-1) % celllimit
 
     if command == "[" and cells[cellptr] == 0: codeptr = bracemap[codeptr]
     if command == "]" and cells[cellptr] != 0: codeptr = bracemap[codeptr]
@@ -137,7 +139,7 @@ def execute(code,data,outputMode):
     if command == ",":
       c = data.getC()
       if c is None: break
-      cells[cellptr] = c
+      cells[cellptr] = c if celllimit==0 else c % celllimit
 
     codeptr += 1
 
@@ -166,6 +168,7 @@ def main():
   parser.add_argument("--input",action="store",type=str,required=False,dest="input",help="input as argument. Read from it with the ',' command.")
   parser.add_argument("--infile",action="store",type=str,required=False,dest="inFile",help="input as file. Read from it with the ',' command.")
   parser.add_argument("--outmode",action="store",type=str,required=False,default="raw",dest="outputMode",help="How the values are outputed. Either raw or int for ASCII written integers")
+  parser.add_argument("--celllimit",action="store",type=int,required=False,default=0,dest="celllimit",help="Maximum value of a cell A limit implies that there are no negative values. 0 means no limit and cell can get negative")
   args=parser.parse_args(sys.argv[1:])
 
   if args.inFile is None and args.input is None:
@@ -173,7 +176,7 @@ def main():
 
   code = Source( args.inputCode, args.codeFile )
   data = Source( args.input,     args.inFile,  args.inputMode )
-  execute( code, data, args.outputMode )
+  execute( code, data, args.outputMode, args.celllimit )
 
 if __name__ == "__main__": main()
 

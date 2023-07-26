@@ -30,11 +30,12 @@ class Source(object):
   Uses either a string or a file for an input.
   It can read one character after the other or parse one ASCII written integer after the other
   """
-  def __init__(self,string=None,filename=None,readmode="raw"):
+  def __init__(self,string=None,filename=None,readmode="raw",eof=None):
     """
     Set either string or filename. But not both. filename can also be a already opened file
     readmode should be raw (every byte/character is one int/character outputed) or int, where the
      input has a list of ASCII written integers.
+    eof is the character that is read when there is no more input left
     """
     if string is not None and filename is not None:
       raise Exception("Can not use a string and a file for input at the same time")
@@ -50,6 +51,10 @@ class Source(object):
         self.s=filename
       self.type="f"
     self.readmode=readmode
+    if type(eof)==type(0) or eof is None:
+      self.eof = eof
+    else:
+      self.eof = ord( eof )
     self.position=0
     if readmode not in ["raw", "int"]:
       raise Exception("Invalid readmode "+readmode)
@@ -88,9 +93,10 @@ class Source(object):
           c = self._getCSub()
         if len(s):
           return int(s)
-        return
+        return None
     c = getNumber(self)
-    if c is None: return
+    if c is None: c = self.eof
+    if c is None: return None
     if ascii:     return chr(c)
     else:         return c
 
@@ -256,9 +262,11 @@ def main():
   parser.add_argument("--outmode",  action="store",type=str,required=False,default="raw",    dest="outputMode",help=h)
   h="Maximum value of a cell A limit implies that there are no negative values. 0 means no limit and cell can get negative"
   parser.add_argument("--celllimit",action="store",type=int,required=False,default=0,        dest="celllimit", help=h)
+  h="Which value is read when the input ends. AKA EOF character"
+  parser.add_argument("--eof",action="store",type=int,required=False,default=None,           dest="eof",       help=h)
   h=\
   """
-    What happens when the data pointer moves 
+    What happens when the data pointer moves
     this mode should either be infinit, wrap, wait or error
     in infinit mode, new cells get added each time the pointer moves pass a border
     in wrap mode, the position is calculated modulo bandlimit
@@ -283,8 +291,8 @@ def main():
     args.inFile = sys.stdin
 
   code = Source( args.inputCode, args.codeFile )
-  data = Source( args.input,     args.inFile,  args.inputMode )
-  band = Band( args.bandmode, args.bandlimit,  args.initValue, args.celllimit )
+  data = Source( args.input,     args.inFile,    args.inputMode, args.eof       )
+  band = Band  ( args.bandmode,  args.bandlimit, args.initValue, args.celllimit )
   execute( code, data, args.outputMode, band )
 
 if __name__ == "__main__": main()

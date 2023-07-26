@@ -154,7 +154,7 @@ class Band(object):
         if self.mode=="error": raise Exception("Reached out of bounds location")
   def moveNegative(self):
     self.position -= 1
-    if self.mode=="inifinit":
+    if self.mode=="infinit":
       if self.position==-len(self.ncells)-1:
         self.ncells.append( self.initValue )
     elif self.position == -1:
@@ -169,12 +169,10 @@ class Band(object):
       if self.mode=="error": raise Exception("Reached out of bounds location")
 
   def add_substract(self,value):
-    if self.position>=0:
-      self.cells[self.position] = self.cells[self.position]+value
-    else:
-      self.ncells[-self.position-1] = self.cells[-self.position-1]+value
+    v = self.getValue()+value
     if self.celllimit:
-      self.cells[self.position] = self.cells[self.position] % self.celllimit
+      v = v % self.celllimit
+    self.setValue(v)
 
   def getValue(self):
     if self.position>=0:

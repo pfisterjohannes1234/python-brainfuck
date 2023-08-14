@@ -197,7 +197,7 @@ class Band(object):
     else:
       self.ncells[-self.position-1] = value
 
-def execute(code,data,outputMode,band):
+def execute(code,data,outputMode,band,debug=0):
   if outputMode not in ["raw", "int"]:
     raise Exception("Invalid outmode "+readmode)
 
@@ -205,8 +205,14 @@ def execute(code,data,outputMode,band):
   bracemap = buildbracemap(code)
   codeptr  = 0
 
+  i=debug
+
   while codeptr < len(code):
     command = code[codeptr]
+    i=i-1
+    if i==0:
+      i=debug
+      print(command,codeptr,band)
 
     if command == ">":   band.movePositive()
     if command == "<":   band.moveNegative()
@@ -283,6 +289,8 @@ def main():
   parser.add_argument("--bandlimit",action="store",type=int,required=False,default=0,dest="bandlimit",         help=h)
   h="Starting value of a cell"
   parser.add_argument("--initvalue",action="store",type=int,required=False,default=0,dest="initValue",         help=h)
+  h="Print Debug output each nth command execution. 0 means no debug output, 1 is highest possible debug output "
+  parser.add_argument("--debug",action="store",type=int,required=False,default=0,dest="debug",                 help=h)
   args=parser.parse_args(sys.argv[1:])
 
   if args.inFile is None and args.input is None:
@@ -291,7 +299,7 @@ def main():
   code = Source( args.inputCode, args.codeFile )
   data = Source( args.input,     args.inFile,    args.inputMode, args.eof       )
   band = Band  ( args.bandmode,  args.bandlimit, args.initValue, args.celllimit )
-  execute( code, data, args.outputMode, band )
+  execute( code, data, args.outputMode, band, args.debug )
 
 if __name__ == "__main__": main()
 

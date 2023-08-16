@@ -28,8 +28,21 @@ import argparse
 
 class Code(object):
   """
+  Class to hold code.
+  We use it in a class to be able to store line and column information
   """
   def __init__(self,source):
+    def buildbracemap(code):
+      "Create a set with the indexes to jump from one [ to the other ]"
+      temp_bracestack, bracemap = [], {}
+
+      for position, command in enumerate(code):
+        if command == "[": temp_bracestack.append(position)
+        if command == "]":
+          start = temp_bracestack.pop()
+          bracemap[start] = position
+          bracemap[position] = start
+      return bracemap
     self.position=[]
     l=[]
     line=1
@@ -43,12 +56,16 @@ class Code(object):
         self.position.append((line,column))
       column=column+1;
     self.code=''.join(l)
+    self.bracemap = buildbracemap( self.code )
+  def jumpBrace(self,codepointer):
+    return self.bracemap[codepointer]
   def getPosition(self,codepointer):
     return self.position[codepointer]
   def __getitem__(self,codepointer):
     return self.code[codepointer]
   def __len__(self):
     return len(self.code)
+
 
 class Source(object):
   """
@@ -227,7 +244,6 @@ def execute(code,data,outputMode,band,debug=0,output=sys.stdout):
     raise Exception("Invalid outmode "+readmode)
 
   code     = Code( code )
-  bracemap = buildbracemap(code)
   codeptr  = 0
 
   i=debug
@@ -243,8 +259,8 @@ def execute(code,data,outputMode,band,debug=0,output=sys.stdout):
     if command == "<":   band.moveNegative()
     if command == "+":   band.add_substract( 1)
     if command == "-":   band.add_substract(-1)
-    if command == "[" and band.getValue() == 0: codeptr = bracemap[codeptr]
-    if command == "]" and band.getValue() != 0: codeptr = bracemap[codeptr]
+    if command == "[" and band.getValue() == 0: codeptr = code.jumpBrace(codeptr)
+    if command == "]" and band.getValue() != 0: codeptr = code.jumpBrace(codeptr)
 
     if command == ".":
       if outputMode=="raw":
@@ -259,37 +275,26 @@ def execute(code,data,outputMode,band,debug=0,output=sys.stdout):
     codeptr += 1
 
 
-def buildbracemap(code):
-  temp_bracestack, bracemap = [], {}
-
-  for position, command in enumerate(code):
-    if command == "[": temp_bracestack.append(position)
-    if command == "]":
-      start = temp_bracestack.pop()
-      bracemap[start] = position
-      bracemap[position] = start
-  return bracemap
-
 
 
 def main():
   parser=argparse.ArgumentParser(epilog=helptext,formatter_class=argparse.RawDescriptionHelpFormatter)
   h="Input source file, should contain the source code"
-  parser.add_argument("--source",   action="store",type=str,required=False,default=None,dest="codeFile",       help=h)
+  parser.add_argument("--source",   action="store",type=str,required=False,default=None,  dest="codeFile",  help=h)
   h="code, given as command line argument"
-  parser.add_argument("--code",     action="store",type=str,required=False,default=None,dest="inputCode",      help=h)
+  parser.add_argument("--code",     action="store",type=str,required=False,default=None,  dest="inputCode", help=h)
   h="How the input is read. Either raw or int for ASCII written integers"
-  parser.add_argument("--inmode",   action="store",type=str,required=False,default="raw",dest="inputMode",     help=h)
+  parser.add_argument("--inmode",   action="store",type=str,required=False,default="raw", dest="inputMode", help=h)
   h="input as argument. Read from it with the ',' command."
-  parser.add_argument("--input",    action="store",type=str,required=False,dest="input",                       help=h)
+  parser.add_argument("--input",    action="store",type=str,required=False,default=None,  dest="input",     help=h)
   h="input as file. Read from it with the ',' command."
-  parser.add_argument("--infile",   action="store",type=str,required=False,dest="inFile",                      help=h)
+  parser.add_argument("--infile",   action="store",type=str,required=False,default=None,  dest="inFile",    help=h)
   h="How the values are outputed. Either raw or int for ASCII written integers"
-  parser.add_argument("--outmode",  action="store",type=str,required=False,default="raw",    dest="outputMode",help=h)
+  parser.add_argument("--outmode",  action="store",type=str,required=False,default="raw", dest="outputMode",help=h)
   h="Maximum value of a cell + 1 A limit implies that there are no negative values. 0 means no limit and cell can get negative. Set to 256 for 8 bit cells"
-  parser.add_argument("--celllimit",action="store",type=int,required=False,default=0,        dest="celllimit", help=h)
+  parser.add_argument("--celllimit",action="store",type=int,required=False,default=0,     dest="celllimit", help=h)
   h="Which value is read when the input ends. AKA EOF character. If not set, the program stops when reading past the last input character"
-  parser.add_argument("--eof",action="store",type=int,required=False,default=None,           dest="eof",       help=h)
+  parser.add_argument("--eof",      action="store",type=int,required=False,default=None,  dest="eof",       help=h)
   h=\
   """
     What happens when the data pointer moves
@@ -306,16 +311,16 @@ def main():
     - wait: going below 0 means wait at 0. Grow when go beyond the positive border
     - error: going below 0 means error. Grow when go beyond the positive border
   """
-  parser.add_argument("--bandmode", action="store",type=str,required=False,default="infinit",dest="bandmode", help=h)
+  parser.add_argument("--bandmode", action="store",type=str,required=False,default="infinit",dest="bandmode",help=h)
   h="How many cells are there at maximum. Interpretations Depends on bandmode"
-  parser.add_argument("--bandlimit",action="store",type=int,required=False,default=0,dest="bandlimit",         help=h)
+  parser.add_argument("--bandlimit",action="store",type=int,required=False,default=0,     dest="bandlimit", help=h)
   h="Starting value of a cell"
-  parser.add_argument("--initvalue",action="store",type=int,required=False,default=0,dest="initValue",         help=h)
+  parser.add_argument("--initvalue",action="store",type=int,required=False,default=0,     dest="initValue", help=h)
   h=\
   "Print Debug output each nth command execution. 0 means no debug output, 1 is highest possible debug output "
   "It has this columns: \n"
   "<current command> <codepointer> <line and column in source file> <tape position> :: <tape to the left> :: <tape to the right> "
-  parser.add_argument("--debug",action="store",type=int,required=False,default=0,dest="debug",                 help=h)
+  parser.add_argument("--debug",    action="store",type=int,required=False,default=0,     dest="debug",     help=h)
   args=parser.parse_args(sys.argv[1:])
 
   if args.inFile is None and args.input is None:

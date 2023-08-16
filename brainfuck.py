@@ -151,20 +151,20 @@ class Source(object):
     self.position=0
     return self
 
-class Band(object):
+class Tape(object):
   """
   Object to store the data of a brainfuck program
   """
-  def __init__(self,mode="infinit",bandlimit=0,initValue=0,celllimit=0):
+  def __init__(self,mode="infinit",tapelimit=0,initValue=0,celllimit=0):
     """
     mode should either be infinit, wrap, wait or error
     in infinit mode, new cells get added each time the pointer moves pass a border
-    in wrap mode, the position is calculated modulo bandlimit
+    in wrap mode, the position is calculated modulo tapelimit
     in wait mode, the position stays at the border and doesn't move pass it
     in error mode, passing beyond the border causes a error
 
-    the bandlimit set a maximum number of cells. Ignored in infinit mode
-    The bandlimit 0 means in this modes:
+    the tapelimit set a maximum number of cells. Ignored in infinit mode
+    The tapelimit 0 means in this modes:
     - inifinit: Ignore
     - wrap: going below 0 means wrap to the highest current used. Grow when go beyond the positive border
     - wait: going below 0 means wait at 0. Grow when go beyond the positive border
@@ -173,7 +173,7 @@ class Band(object):
     The celllimit gives a maximum value + 1 per cell
     """
     if mode not in ["infinit", "wrap", "wait", "error"]:
-      raise Exception("Invalid bandmode "+mode)
+      raise Exception("Invalid tapemode "+mode)
     self.initValue= initValue%celllimit if celllimit else initValue
 
     self.mode=mode
@@ -181,16 +181,16 @@ class Band(object):
     if mode=="infinit":
       self.ncells=[self.initValue]
     self.position=0
-    self.bandlimit=bandlimit
+    self.tapelimit=tapelimit
 
     self.celllimit=celllimit
 
   def movePositive(self):
     self.position += 1
     if self.position==len(self.cells):
-      if self.bandlimit==0 or self.mode=="inifinit":
+      if self.tapelimit==0 or self.mode=="inifinit":
         self.cells.append( self.initValue )
-      elif self.bandlimit==self.position:
+      elif self.tapelimit==self.position:
         if self.mode=="wrap": self.position = 0
         if self.mode=="wait": self.position = self.position-1
         if self.mode=="error": raise Exception("Reached out of bounds location")
@@ -201,12 +201,12 @@ class Band(object):
         self.ncells.append( self.initValue )
     elif self.position == -1:
       if self.mode=="wrap":
-        if self.bandlimit==0:
+        if self.tapelimit==0:
           self.position = len(self.cells)-1
         else:
-          if len(self.cells) < self.bandlimit:
-            self.cells = self.cells + [ self.initValue for i in range(self.bandlimit-len(self.cells)) ]
-          self.position = self.bandlimit-1
+          if len(self.cells) < self.tapelimit:
+            self.cells = self.cells + [ self.initValue for i in range(self.tapelimit-len(self.cells)) ]
+          self.position = self.tapelimit-1
       if self.mode=="wait": self.position = 0
       if self.mode=="error": raise Exception("Reached out of bounds location")
 
@@ -239,7 +239,7 @@ class Band(object):
     else:
       self.ncells[-self.position-1] = value
 
-def execute(code,data,outputMode,band,debug=0,output=sys.stdout):
+def execute(code,data,outputMode,tape,debug=0,output=sys.stdout):
   if outputMode not in ["raw", "int"]:
     raise Exception("Invalid outmode "+readmode)
 
@@ -253,24 +253,24 @@ def execute(code,data,outputMode,band,debug=0,output=sys.stdout):
     i=i-1
     if i==0:
       i=debug
-      print("{} {:3} {:9}".format(command,codeptr,str(code.getPosition(codeptr)))+str(band),file=sys.stderr)
+      print("{} {:3} {:9}".format(command,codeptr,str(code.getPosition(codeptr)))+str(tape),file=sys.stderr)
 
-    if command == ">":   band.movePositive()
-    if command == "<":   band.moveNegative()
-    if command == "+":   band.add_substract( 1)
-    if command == "-":   band.add_substract(-1)
-    if command == "[" and band.getValue() == 0: codeptr = code.jumpBrace(codeptr)
-    if command == "]" and band.getValue() != 0: codeptr = code.jumpBrace(codeptr)
+    if command == ">":  tape.movePositive()
+    if command == "<":  tape.moveNegative()
+    if command == "+":  tape.add_substract( 1)
+    if command == "-":  tape.add_substract(-1)
+    if command == "[" and tape.getValue() == 0: codeptr = code.jumpBrace(codeptr)
+    if command == "]" and tape.getValue() != 0: codeptr = code.jumpBrace(codeptr)
 
     if command == ".":
       if outputMode=="raw":
-        output.write(chr(band.getValue()))
+        output.write(chr(tape.getValue()))
       if outputMode=="int":
-        output.write(str(band.getValue())+"\n")
+        output.write(str(tape.getValue())+"\n")
     if command == ",":
       c = data.getC()
       if c is None: break
-      band.setValue(c)
+      tape.setValue(c)
 
     codeptr += 1
 
@@ -300,20 +300,20 @@ def main():
     What happens when the data pointer moves
     this mode should either be infinit, wrap, wait or error
     in infinit mode, new cells get added each time the pointer moves pass a border
-    in wrap mode, the position is calculated modulo bandlimit
+    in wrap mode, the position is calculated modulo tapelimit
     in wait mode, the position stays at the border and doesn't move pass it
     in error mode, passing beyond the border causes a error
 
-    the bandlimit set a maximum number of cells. Ignored in infinit mode
-    The bandlimit 0 means in this modes:
+    the tapelimit set a maximum number of cells. Ignored in infinit mode
+    The tapelimit 0 means in this modes:
     - inifinit: Ignore
     - wrap: going below 0 means wrap to the highest current used. Grow when go beyond the positive border
     - wait: going below 0 means wait at 0. Grow when go beyond the positive border
     - error: going below 0 means error. Grow when go beyond the positive border
   """
-  parser.add_argument("--bandmode", action="store",type=str,required=False,default="infinit",dest="bandmode",help=h)
-  h="How many cells are there at maximum. Interpretations Depends on bandmode"
-  parser.add_argument("--bandlimit",action="store",type=int,required=False,default=0,     dest="bandlimit", help=h)
+  parser.add_argument("--tapemode", action="store",type=str,required=False,default="infinit",dest="tapemode",help=h)
+  h="How many cells are there at maximum. Interpretations Depends on tapemode"
+  parser.add_argument("--tapelimit",action="store",type=int,required=False,default=0,     dest="tapelimit", help=h)
   h="Starting value of a cell"
   parser.add_argument("--initvalue",action="store",type=int,required=False,default=0,     dest="initValue", help=h)
   h=\
@@ -328,8 +328,8 @@ def main():
 
   code = Source( args.inputCode, args.codeFile )
   data = Source( args.input,     args.inFile,    args.inputMode, args.eof       )
-  band = Band  ( args.bandmode,  args.bandlimit, args.initValue, args.celllimit )
-  execute( code, data, args.outputMode, band, args.debug )
+  tape = Tape  ( args.tapemode,  args.tapelimit, args.initValue, args.celllimit )
+  execute( code, data, args.outputMode, tape, args.debug )
 
 if __name__ == "__main__": main()
 
@@ -338,7 +338,7 @@ def evaluate\
     code,
     data=None,inputMode="raw",eof=None,
     outputMode="raw", output=sys.stdout,
-    band=None,bandmode="infinit",bandlimit=0,initValue=0,celllimit=0,
+    tape=None,tapemode="infinit",tapelimit=0,initValue=0,celllimit=0,
     debug=0
   ):
   """
@@ -350,8 +350,8 @@ def evaluate\
   eof indicates the character read when there are no input character left
   outputMode should either be "raw" or "int"
   output should be a output file.
-  band can be a instance of band, a new instance will be created when band is None
-  bandmode, bandlimit, initValue and celllimit are parameters for the new band instance.
+  tape can be a instance of tape, a new instance will be created when tape is None
+  tapemode, tapelimit, initValue and celllimit are parameters for the new tape instance.
   debug set how often we debug something to sys.stderr, 0 for no debugging.
   """
   code = Source( code )
@@ -359,7 +359,7 @@ def evaluate\
     data = Source(string=data,filename=None,readmode=inputMode,eof=eof)
   elif data==None:
     data = Source(string=None,filename=sys.stdin,readmode=inputMode,eof=eof)
-  if band==None:
-    band = Band( bandmode, bandlimit, initValue, celllimit )
+  if tape==None:
+    tape = Tape( tapemode, tapelimit, initValue, celllimit )
 
-  execute( code, data, outputMode, band, debug, output )
+  execute( code, data, outputMode, tape, debug, output )

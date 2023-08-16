@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Brainfuck Interpreter
+# Not so small anymore Brainfuck Interpreter
 # Orginal from 2011 Sebastian Kaspari
 # Modified by others
 #
@@ -222,7 +222,7 @@ class Band(object):
     else:
       self.ncells[-self.position-1] = value
 
-def execute(code,data,outputMode,band,debug=0):
+def execute(code,data,outputMode,band,debug=0,output=sys.stdout):
   if outputMode not in ["raw", "int"]:
     raise Exception("Invalid outmode "+readmode)
 
@@ -248,9 +248,9 @@ def execute(code,data,outputMode,band,debug=0):
 
     if command == ".":
       if outputMode=="raw":
-        sys.stdout.write(chr(band.getValue()))
+        output.write(chr(band.getValue()))
       if outputMode=="int":
-        sys.stdout.write(str(band.getValue())+"\n")
+        output.write(str(band.getValue())+"\n")
     if command == ",":
       c = data.getC()
       if c is None: break
@@ -269,6 +269,7 @@ def buildbracemap(code):
       bracemap[start] = position
       bracemap[position] = start
   return bracemap
+
 
 
 def main():
@@ -327,3 +328,33 @@ def main():
 
 if __name__ == "__main__": main()
 
+def evaluate\
+  (
+    code,
+    data=None,inputMode="raw",eof=None,
+    outputMode="raw", output=sys.stdout,
+    band=None,bandmode="infinit",bandlimit=0,initValue=0,celllimit=0,
+    debug=0
+  ):
+  """
+  Function to execute brainfuck code from python.
+  code should be a code string
+  data should either be string containing the input data, a instance of Source or None In case it
+   is None, data is read from sys.stdin
+  inputMode should either be "raw" or "int".
+  eof indicates the character read when there are no input character left
+  outputMode should either be "raw" or "int"
+  output should be a output file.
+  band can be a instance of band, a new instance will be created when band is None
+  bandmode, bandlimit, initValue and celllimit are parameters for the new band instance.
+  debug set how often we debug something to sys.stderr, 0 for no debugging.
+  """
+  code = Source( code )
+  if type(data)==type(""):
+    data = Source(string=data,filename=None,readmode=inputMode,eof=eof)
+  elif data==None:
+    data = Source(string=None,filename=sys.stdin,readmode=inputMode,eof=eof)
+  if band==None:
+    band = Band( bandmode, bandlimit, initValue, celllimit )
+
+  execute( code, data, outputMode, band, debug, output )

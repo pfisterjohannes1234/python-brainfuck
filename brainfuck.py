@@ -19,6 +19,8 @@ Brainfuck commands:
 ] jump to corresponding [
 , read value
 . output value
+
+This is a slow but more flexible version of a brainfuck interpreter.
 """
 
 import sys
@@ -235,7 +237,7 @@ def execute(code,data,outputMode,band,debug=0):
     i=i-1
     if i==0:
       i=debug
-      print("{} {:3} {:9}".format(command,codeptr,str(code.getPosition(codeptr)))+str(band))
+      print("{} {:3} {:9}".format(command,codeptr,str(code.getPosition(codeptr)))+str(band),file=sys.stderr)
 
     if command == ">":   band.movePositive()
     if command == "<":   band.moveNegative()
@@ -255,19 +257,6 @@ def execute(code,data,outputMode,band,debug=0):
       band.setValue(c)
 
     codeptr += 1
-
-
-def cleanup(code):
-  t = code.splitlines(keepends=1)
-  l=[]
-  for i in t:
-    l.append(filter(lambda x: x in ['.', ',', '[', ']', '<', '>', '+', '-'], i))
-  l2=[]
-  for line,i in enumerate(l):
-    for c in i:
-      l2.append(c)
-      l2.append(line)
-  return ''.join(l2)
 
 
 def buildbracemap(code):
@@ -298,7 +287,7 @@ def main():
   parser.add_argument("--outmode",  action="store",type=str,required=False,default="raw",    dest="outputMode",help=h)
   h="Maximum value of a cell + 1 A limit implies that there are no negative values. 0 means no limit and cell can get negative. Set to 256 for 8 bit cells"
   parser.add_argument("--celllimit",action="store",type=int,required=False,default=0,        dest="celllimit", help=h)
-  h="Which value is read when the input ends. AKA EOF character"
+  h="Which value is read when the input ends. AKA EOF character. If not set, the program stops when reading past the last input character"
   parser.add_argument("--eof",action="store",type=int,required=False,default=None,           dest="eof",       help=h)
   h=\
   """
@@ -321,7 +310,10 @@ def main():
   parser.add_argument("--bandlimit",action="store",type=int,required=False,default=0,dest="bandlimit",         help=h)
   h="Starting value of a cell"
   parser.add_argument("--initvalue",action="store",type=int,required=False,default=0,dest="initValue",         help=h)
-  h="Print Debug output each nth command execution. 0 means no debug output, 1 is highest possible debug output "
+  h=\
+  "Print Debug output each nth command execution. 0 means no debug output, 1 is highest possible debug output "
+  "It has this columns: \n"
+  "<current command> <codepointer> <line and column in source file> <tape position> :: <tape to the left> :: <tape to the right> "
   parser.add_argument("--debug",action="store",type=int,required=False,default=0,dest="debug",                 help=h)
   args=parser.parse_args(sys.argv[1:])
 

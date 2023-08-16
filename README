@@ -1,9 +1,70 @@
-This is just a small Brainfuck interpreter written in Python.
+This is just a Brainfuck interpreter written in Python.
 
-Usage:
- ./brainfuck.py yourcode.bf
+Brainfuck commands:
++ Increment current cell
+- Decrement current cell
+> Move to next cell
+< Move to previous cell (here: stay at cell 0 if we are already at cell 0)
+[ if cell value is 0, move to next command after the corresponding ]. If value is not 0, continue with command after [
+] jump to corresponding [
+, read value
+. output value
+
+This is a slow but more flexible version of a brainfuck interpreter.
+
+
+usage: brainfuck.py [-h] [--source CODEFILE] [--code INPUTCODE] [--inmode INPUTMODE] [--input INPUT]
+                    [--infile INFILE] [--outmode OUTPUTMODE] [--celllimit CELLLIMIT] [--eof EOF]
+                    [--tapemode TAPEMODE] [--tapelimit TAPELIMIT] [--initvalue INITVALUE]
+                    [--debug DEBUG]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --source CODEFILE     Input source file, should contain the source code
+  --code INPUTCODE      code, given as command line argument
+  --inmode INPUTMODE    How the input is read. Either raw or int for ASCII written integers
+  --input INPUT         input as argument. Read from it with the ',' command.
+  --infile INFILE       input as file. Read from it with the ',' command.
+  --outmode OUTPUTMODE  How the values are outputed. Either raw or int for ASCII written integers.
+  --celllimit CELLLIMIT Maximum value of a cell + 1 A limit implies that there are no negative values.
+                        0 means no limit and cell can get negative. Set to 256 for 8 bit cells.
+  --eof EOF             Which value is read when the input ends. AKA EOF character. If not set, the
+                         program stops when reading past the last input character
+  --tapemode TAPEMODE   What happens when the data pointer moves this mode should either be infinit,
+                         wrap, wait or error.
+                        In infinit mode, new cells get added each time the pointer moves pass a
+                         border.
+                        In wrap mode, the position is calculated modulo tapelimit.
+                        In wait mode, the position stays at the border and doesn't move pass it
+                        In error mode, going beyond the border causes a error
+                        The tapelimit set a maximum number of cells. Ignored in infinit mode.
+                        The tapelimit 0 means in this modes:
+                          - inifinit: Ignore
+                          - wrap: going below 0 means wrap to the highest current used. Grow when go
+                            beyond the positive border
+                          - wait: going below 0 means wait at 0. Grow when go beyond the positive
+                            border
+                          - error: going below 0 means error. Grow when go beyond the positive border
+  --tapelimit TAPELIMIT
+                        How many cells are there at maximum. Interpretations Depends on tapemode
+  --initvalue INITVALUE
+                        Starting value of a cell
+  --debug DEBUG         Print Debug output each nth command execution. 0 means no debug output, 1
+                         is highest possible debug output.
+
+
+You most likely want to set eof to something.
+
+Example ussage:
+  ./brainfuck.py --code ",>,[<+>-]<." --inmode int --outmode int --eof 0
+This expects 2 integers, adds them and outputs the result (the string to integer conversation is
+ done by the interpreter, because inmode and outmode are set to int)
+
+
+
 
 You can use it as a module as well:
+
   import brainfuck
 
   sourcecode = """

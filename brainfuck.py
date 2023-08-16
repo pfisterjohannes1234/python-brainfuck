@@ -128,7 +128,7 @@ class Band(object):
     - wait: going below 0 means wait at 0. Grow when go beyond the positive border
     - error: going below 0 means error. Grow when go beyond the positive border
 
-    The celllimit gives a maximum value per cell
+    The celllimit gives a maximum value + 1 per cell
     """
     if mode not in ["infinit", "wrap", "wait", "error"]:
       raise Exception("Invalid bandmode "+mode)
@@ -264,7 +264,7 @@ def main():
   parser.add_argument("--infile",   action="store",type=str,required=False,dest="inFile",                      help=h)
   h="How the values are outputed. Either raw or int for ASCII written integers"
   parser.add_argument("--outmode",  action="store",type=str,required=False,default="raw",    dest="outputMode",help=h)
-  h="Maximum value of a cell A limit implies that there are no negative values. 0 means no limit and cell can get negative"
+  h="Maximum value of a cell + 1 A limit implies that there are no negative values. 0 means no limit and cell can get negative. Set to 256 for 8 bit cells"
   parser.add_argument("--celllimit",action="store",type=int,required=False,default=0,        dest="celllimit", help=h)
   h="Which value is read when the input ends. AKA EOF character"
   parser.add_argument("--eof",action="store",type=int,required=False,default=None,           dest="eof",       help=h)

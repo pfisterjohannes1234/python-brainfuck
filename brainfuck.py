@@ -24,6 +24,29 @@ Brainfuck commands:
 import sys
 import argparse
 
+class Code(object):
+  """
+  """
+  def __init__(self,source):
+    self.position=[]
+    l=[]
+    line=1
+    column=1
+    for i in source:
+      if i=='\n':
+        line=line+1
+        column=0
+      elif i in ['.', ',', '[', ']', '<', '>', '+', '-']:
+        l.append(i)
+        self.position.append((line,column))
+      column=column+1;
+    self.code=''.join(l)
+  def getPosition(self,codepointer):
+    return self.position[codepointer]
+  def __getitem__(self,codepointer):
+    return self.code[codepointer]
+  def __len__(self):
+    return len(self.code)
 
 class Source(object):
   """
@@ -187,10 +210,10 @@ class Band(object):
       self.ncells[-self.position-1] = value
 
   def __str__(self):
-    r=str(self.position) + " :: "
+    r= "{:3} ::".format(self.position)
     if self.mode=="infinit":
       r= r + str( self.ncells[::-1] ) + " :: "
-    return r + str(self.cells)
+    return r + ''.join( '{:02X} '.format(a) for a in self.cells )
     value = value % self.celllimit if self.celllimit else value
     if self.position>=0:
       self.cells[self.position] = value
@@ -201,7 +224,7 @@ def execute(code,data,outputMode,band,debug=0):
   if outputMode not in ["raw", "int"]:
     raise Exception("Invalid outmode "+readmode)
 
-  code     = cleanup( list(code) )
+  code     = Code( code )
   bracemap = buildbracemap(code)
   codeptr  = 0
 
@@ -212,7 +235,7 @@ def execute(code,data,outputMode,band,debug=0):
     i=i-1
     if i==0:
       i=debug
-      print(command,codeptr,band)
+      print("{} {:3} {:9}".format(command,codeptr,str(code.getPosition(codeptr)))+str(band))
 
     if command == ">":   band.movePositive()
     if command == "<":   band.moveNegative()
@@ -235,7 +258,16 @@ def execute(code,data,outputMode,band,debug=0):
 
 
 def cleanup(code):
-  return ''.join(filter(lambda x: x in ['.', ',', '[', ']', '<', '>', '+', '-'], code))
+  t = code.splitlines(keepends=1)
+  l=[]
+  for i in t:
+    l.append(filter(lambda x: x in ['.', ',', '[', ']', '<', '>', '+', '-'], i))
+  l2=[]
+  for line,i in enumerate(l):
+    for c in i:
+      l2.append(c)
+      l2.append(line)
+  return ''.join(l2)
 
 
 def buildbracemap(code):
